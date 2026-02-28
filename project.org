@@ -1,0 +1,34 @@
+* Specifications
+* Project =Useme=
+A trash-cli like utility, light and mnemonic
+
+=useme= /I don't let you loose your files/
+* Workspace dir
+=~/prog/groundworks/usemetestdir/=
+
+* Few things to consider from =rm=
+Checkout info
+#+begin_src emacs-lisp
+(info "(coreutils) rm invocation")
+#+end_src
+
+** Recursive Deletion
+#+begin_src sh
+$ rm dir1 file1
+rm: cannot remove 'dir1': Is a directory
+             # deletes file1, but fails to delete dir1
+#+end_src
+
+- Our intended behavoir is ask for confirmation: Y/[N] (no is default)
+  If No then should not delete =file1= either.
+
+** Removing files like =-foo.txt=
+#+begin_src sh
+$ \rm -foo.txt
+rm: invalid option -- 'o'
+Try 'rm ./-foo.txt' to remove the file '-foo.txt'.
+Try 'rm --help' for more information.
+#+end_src
+
+** Usage with zero arguments (files)
+Then, =um= should print the files in list with a character (if possible)
