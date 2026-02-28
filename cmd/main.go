@@ -48,40 +48,23 @@ func main() {
 	}
 }
 
-// func printMenu(files []*FileItem) {
-// 	fmt.Printf("%s\n*** Interactive File Picker ***%s",
-// 		colors[BoldText], colors[Reset])
-
-// 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-// 	fmt.Println()
-
-// 	for i, f := range files {
-// 		var pre, post string = "", ""
-// 		status := " "
-// 		if f.Selected {
-// 			status = "*"
-// 			pre, post = colors[Blue], colors[Reset]
-// 		}
-// 		fmt.Fprintf(w, "%s %s\t%d: %s  %s\n", pre, status, i+1, f.Name, post)
-// 	}
-// 	w.Flush()
-// 	fmt.Printf("\n(Commands: 1-%d to toggle, 'u' for update, 'q' to quit)",
-// 		len(files))
-// }
-
 func printMenu(files []*FileItem) {
 	fmt.Printf("%s\n*** Interactive File Picker ***%s\n",
 		colors[BoldText], colors[Reset])
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	for i, f := range files {
-		status, pre, post := "[ ]", "", ""
+		status := " "
+		pre, post := "", ""
 		if f.Selected {
-			status, pre, post = "[*]", colors[Blue], colors[Reset]
+			status = "*"
+			pre = colors[BoldText] + colors[Blue]
+			post = colors[Reset]
 		}
-		fmt.Fprintf(w, "%s%s\t%d: %s%s\n", pre, status, i+1, f.Name, post)
-		// [28-02-2026] FIXME:
+		label := fmt.Sprintf("%s%s %d: %s%s", pre, status, i+1, f.Name, post)
+		fmt.Fprintf(w, "\t%s\n", label)
 	}
+
 	w.Flush()
 	fmt.Printf("\n%s(Commands: 1-%d to toggle, 'u' update, 'q' quit): %s",
 		colors[BoldText], len(files), colors[Reset])
@@ -89,7 +72,7 @@ func printMenu(files []*FileItem) {
 
 func handleSelection(input string, files []*FileItem) {
 	indexes := parseOnlyInts(input)
-	for idx := range indexes {
+	for _, idx := range indexes {
 		if idx > 0 && idx <= len(files) {
 			files[idx-1].Selected = !files[idx-1].Selected // toggle
 		} else {
