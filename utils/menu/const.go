@@ -1,4 +1,4 @@
-package main
+package menu
 
 const (
 	KB = 1024

@@ -1,8 +1,104 @@
-* Specifications
-* Project =Useme=
-A trash-cli like utility, light and mnemonic
+* Specifications Notes
+** Trash Directories
+- Multi-user environment :: Users have specific numeric identifiers
+#+begin_src sh
+$ id
+uid=1000(ukiran) gid=1000(ukiran) groups=1000(ukiran),4(wheel),8(floppy),12(audio),13(video),16(cdrom),17(optical),24(kvm),25(input),100(users),101(xbuilder),982(socklog),988(docker),1001(uinput)
+#+end_src
 
+- Top Dir ($topdir) :: Its the top directory for the root file system,
+  eg. ~/home~, ~/media/flash~, etc.
+#+begin_src sh
+$ df -h / /tmp
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p3   39G   25G   12G  68% /
+tmpfs           7.8G   12K  7.8G   1% /tmp
+#+end_src
+
+- MAY support trashing files from the rest of the system (including
+  other partitions, shared network resources, and removable devices)
+  into the ="home trash ($XDG_DATA_HOME/Trash)"=.
+
+  An Implementation MAY choose not to support trashing in some of
+  these cases (notably on network resources and removable devices),
+  due to costly file copying.
+
+  MAY also trash into "top directories" of some or all mounted
+  resources. This trashing is done in 2 ways
+  1) Admin can create an ~$topdir/.Trash~ directory, the permissions on
+     this directorie should permit all users who can trash files at
+     all to write in it. the “sticky bit” in the permissions must be
+     set, if the file system supports it.
+
+     When trashing a file from a non-home partition/device, an
+     implementation (if it supports trashing in top directories) MUST
+     check for the presence of $topdir/.Trash. When ~listing~, the
+     program also MUST check for .Trash in all top dirs that are
+     known. The implementation
+     - MUST, by default, check for the “sticky bit”.
+     - MUST check that this directory is not a symbolic link
+
+     If checks passed, program should use this ~$topdir/.Trash/$uid~.
+
+  2) If an ~$topdir/.Trash~ directory is absent, an ~$topdir/.Trash-$uid~
+     directory is to be used as the user’s trash directory for this
+     ~device/partition~. $uid is the user’s numeric identifier.
+
+     First check for: either absense of ~$topdir/.Trash~ or has not
+     passed the checks. Then only we can proceed with
+     ~$topdir/.Trash-$uid~.
+** Contents of Trash Directories
+*** Spawn one Atomic action with two Process
+When trashing a file or directory, the implementation MUST create the
+corresponding file in $trash/info first. Moreover, it MUST try to do
+this in an atomic fashion, so that if two processes try to trash files
+with the same filename this will result in two different trash files.
+On Unix-line systems this is done by generating a filename, and then
+opening with O_EXCL. If that succeeds the creation was atomic (at
+least on the same machine), if it fails you need to pick another
+filename.
+
+- Create ~file.txt.trashinfo~ file into ~$trash/info/~ with contents
+#+begin_src conf
+[Trash Info]
+Path=testdir/file.txt
+DeletionDate=2026-03-01T14:02:59
+#+end_src
+- Move the ~$trashed_file~ into ~$trash/files~ with zero modifications
+  to the metadata or contents
+- =directorysizes= file for caching the dir sizes in the trash can
+~[size] [mtime] [percent-encoded-directory-name]~
+
+#+begin_src text
+16384 15803468 Documents
+8192 15803582 Another_Folder
+#+end_src
+
+[[https://specifications.freedesktop.org/trash/latest/#non-normative-suggested-algorithm-for-calculating-the-size-of-a-trash-directory][Non-normative: suggested algorithm for calculating the size of a trash
+directory]]* Project =Useme=
+A trash-cli like utility, light and mnemonic
 =useme= /I don't let you loose your files/
+** Structure
+#+begin_src
+my-cli-app/
+├── cmd/
+│   └── mycli/            # Main entry point
+│       └── main.go
+├── internal/             # Private code (non-importable by others)
+│   ├── ui/               # UI Layer
+│   │   ├── tea/          # BubbleTea implementation
+│   │   │   ├── models.go
+│   │   │   └── update.go
+│   │   └── diy/          # Your custom DIY UI implementation
+│   │       └── render.go
+│   ├── biz/              # Business Logic (The "Brain")
+│   │   ├── service.go
+│   │   └── models.go
+│   └── config/           # App configuration/flags
+├── pkg/                  # Public library code (optional)
+├── go.mod
+└── README.md
+#+end_src
 * Workspace dir
 =~/prog/groundworks/usemetestdir/=
 

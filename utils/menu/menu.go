@@ -1,4 +1,4 @@
-package main
+package menu
 
 import (
 	"bufio"
@@ -13,6 +13,28 @@ import (
 type FileItem struct {
 	Name     string
 	Selected bool
+}
+
+type FileSet struct {
+	files []*FileItem
+}
+
+func (f *FileItem) String() string {
+	var status string
+	switch f.Selected {
+	case true:
+		status = "#"
+	case false:
+		status = ""
+
+	}
+	return f.Name + status
+}
+
+func NewFileSet(files []*FileItem) *FileSet {
+	return &FileSet{
+		files: files,
+	}
 }
 
 func main() {
