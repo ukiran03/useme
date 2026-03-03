@@ -16,7 +16,6 @@ func main() {
 	if len(args) < 1 {
 		log.Fatal("Error: No input file")
 	}
-
 	for _, arg := range args {
 		mount, err := getFsMountPoint(arg)
 		if err != nil {
@@ -39,9 +38,9 @@ func getFsMountPoint(file string) (string, error) {
 		return "", fmt.Errorf("Error: %v\n", err)
 	}
 	mountPoint := findMountPoint(path)
-	fmt.Printf("File:        %s\n", path)
-	fmt.Printf("FS Type Hex: 0x%x\n", stat.Type)
-	fmt.Printf("Mount Point: %s\n", mountPoint)
+	// fmt.Printf("File:        %s\n", path)
+	// fmt.Printf("FS Type Hex: 0x%x\n", stat.Type)
+	// fmt.Printf("Mount Point: %s\n", mountPoint)
 	return mountPoint, nil
 }
 
