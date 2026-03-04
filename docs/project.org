@@ -3,7 +3,9 @@
 - Multi-user environment :: Users have specific numeric identifiers
   #+begin_src sh
   $ id
-  uid=1000(ukiran) gid=1000(ukiran) groups=1000(ukiran),4(wheel),8(floppy),12(audio),13(video),16(cdrom),17(optical),24(kvm),25(input),100(users),101(xbuilder),982(socklog),988(docker),1001(uinput)
+  uid=1000(ukiran) gid=1000(ukiran) groups=1000(ukiran),4(wheel), \
+  8(floppy),12(audio),13(video),16(cdrom),17(optical),24(kvm), \
+  25(input),100(users),101(xbuilder),982(socklog),988(docker),1001(uinput)
   #+end_src
 
 - Top Dir ($topdir) :: Its the top directory for the root file system,
