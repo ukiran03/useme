@@ -9,6 +9,12 @@ type TrashImpl interface {
 	//   - if it is HomeTrash, hopefully os.Rename will be enough
 	//   - if it is SpecialTrash, copy+delete should be implemented
 	MoveToTrash() error
+
+	Put(src string) error
+	Restore(fe *FileEntry, dst string) error
+	Remove(fe *FileEntry) error // permanent deletion
+	List() ([]*FileEntry, error)
+	Info()
 }
 
 func (ht *HomeTrash) SourceDir() string {
