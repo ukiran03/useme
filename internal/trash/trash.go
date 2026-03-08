@@ -17,18 +17,11 @@ func NewTrashCan(minfo *fs.MountInfo) *TrashCan {
 	}
 }
 
-// func NewTrashCan(filent *FileEntry) (*TrashCan, error) {
-// 	var stat unix.Stat_t
-// 	if err := unix.Stat(filent.OrigPath, &stat); err != nil {
-// 		return nil, err
-// 	}
-// 	return &TrashCan{
-// 		RootPath: filent.MountRoot,
-// 		DeviceID: stat.Dev,
-// 	}, nil
-// }
+// All these methods of TrashCan assume the relevant directories are
+// created and checked in prior
 
-func (tc *TrashCan) Put(entry *FileEntry) error
+func (tc *TrashCan) Put(entry *FileEntry) error {
+}
 
 func (tc *TrashCan) Restore(entry *FileEntry, dst string) error
 

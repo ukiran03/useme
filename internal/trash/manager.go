@@ -52,20 +52,19 @@ func NewTrashManager(mounts []*fs.MountInfo, homeDir string) (*TrashManager, err
 }
 
 // FindTarget decides which TrashCan should be used.
-func (tm *TrashManager) FindTarget(filent *FileEntry) *TrashCan {
+func (tm *TrashManager) FindTarget(filent *FileEntry) (*TrashCan, error) {
 	// Get device ID of filePath
 	// If same as Home, return tm.HomeTrash
-	// Else, lookfor/initialize a TrashCan on that mount point
+	// Else, lookfor a TrashCan on that mount point
 
 	if filent.DeviceID == tm.HomeTrash.DeviceID {
-		return tm.HomeTrash
+		return tm.HomeTrash, nil
 	} else {
 		if trash, ok := tm.Mounts[filent.MountRoot]; ok {
-			return trash
+			return trash, nil
 		}
 	}
-	// TODO: start from here
-	return &TrashCan{}
+	return nil, fmt.Errorf("No trashCan found for: %s", filent.Name)
 }
 
 type MoveStrategy int
@@ -77,7 +76,10 @@ const (
 )
 
 func (tm *TrashManager) Put(filent *FileEntry, strategy MoveStrategy) error {
-	targetCan := tm.FindTarget(filent)
+	targetCan, err := tm.FindTarget(filent)
+	if err != nil {
+		return err
+	}
 
 	if onSameDevice(filent.MountRoot, targetCan) {
 		// return targetCan.Put(filePath) // TODO:

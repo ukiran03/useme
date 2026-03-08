@@ -1,42 +1,51 @@
 package fs
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
-// Source: github.com/moby/sys/mountinfo/mountinfo_linux.go
-//
-// This function converts all such escape sequences back to ASCII, and
-// returns the unescaped string.
-func unescape(path string) string {
-	// Try to avoid copying.
-	if strings.IndexByte(path, '\\') == -1 {
-		return path
+func InitTrashCan(rootPath, trashName string) (string, error) {
+	trashPath := filepath.Join(rootPath, trashName)
+	// Ensure the root trash path exists and has strict permissions
+	if err := os.MkdirAll(trashPath, 0o700); err != nil {
+		return "", fmt.Errorf("failed to create trash root %s: %w", trashPath, err)
+	}
+	// Explicitly enforce permissions in case the dir already exixted with
+	// loose permissions (eg: 0o755)
+	if err := os.Chmod(trashPath, 0o700); err != nil {
+		return "", fmt.Errorf("failed to secure trash directory: %w", err)
 	}
 
-	// The following code is UTF-8 transparent as it only looks for
-	// some specific characters (backslash and 0..7) with values less
-	// than utf8.RuneSelf, and everything else is passed through as is.
-	buf := make([]byte, len(path))
-	bufLen := 0
-	for i := 0; i < len(path); i++ {
-		c := path[i]
-		// Look for \NNN, i.e. a backslash followed by three octal
-		// digits. Maximum value is 177 (equals utf8.RuneSelf-1).
-		if c == '\\' && i+3 < len(path) &&
-			(path[i+1] == '0' || path[i+1] == '1') &&
-			(path[i+2] >= '0' && path[i+2] <= '7') &&
-			(path[i+3] >= '0' && path[i+3] <= '7') {
-			// Convert from ASCII to numeric values.
-			c1 := path[i+1] - '0'
-			c2 := path[i+2] - '0'
-			c3 := path[i+3] - '0'
-			// Each octal digit is three bits, thus the shift value.
-			c = c1<<6 | c2<<3 | c3
-			// We read three extra bytes of input.
-			i += 3
+	subdirs := []string{
+		filepath.Join(trashPath, "files"), // actual files
+		filepath.Join(trashPath, "info"),  // .trashinfo files
+	}
+
+	for _, dir := range subdirs {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return "", fmt.Errorf(
+				"failed to create trash subdir %s: %w", dir, err,
+			)
 		}
-		buf[bufLen] = c
-		bufLen++
 	}
+	dirCacheFile := filepath.Join(trashPath, "directorysizes")
+	if err := MakeDirCacheFile(dirCacheFile); err != nil {
+		return "", fmt.Errorf("Failed to create directorysizes file: %w", err)
+	}
+	return trashPath, nil
+}
 
-	return string(buf[:bufLen])
+func MakeDirCacheFile(cachepath string) error {
+	// O_CREATE | O_EXCL ensures we don't truncate or touch it if it exists
+	f, err := os.OpenFile(cachepath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil
+		}
+		return fmt.Errorf("could not create cache file %s: %w", cachepath, err)
+	}
+	return f.Close()
 }
