@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 )
 
-func InitTrashCan(rootPath, trashName string) (string, error) {
-	trashPath := filepath.Join(rootPath, trashName)
+// InitTrashCan: Initialises the TrashDir, with all its requirments
+// (files & info directory, dircachefile file)
+func InitTrashCan(trashPath string) (string, error) {
 	// Ensure the root trash path exists and has strict permissions
 	if err := os.MkdirAll(trashPath, 0o700); err != nil {
 		return "", fmt.Errorf("failed to create trash root %s: %w", trashPath, err)
@@ -39,7 +40,8 @@ func InitTrashCan(rootPath, trashName string) (string, error) {
 }
 
 func MakeDirCacheFile(cachepath string) error {
-	// O_CREATE | O_EXCL ensures we don't truncate or touch it if it exists
+	// O_CREATE | O_EXCL ensures we don't truncate or touch it if it
+	// already exists
 	f, err := os.OpenFile(cachepath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {

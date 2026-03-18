@@ -86,6 +86,7 @@ func ParseMountInfo(r io.Reader, filterFunc FilterFunc) ([]*MountInfo, error) {
 var (
 	tmpFS         = "tmpfs"
 	ignoreFsTypes = map[string]bool{
+		"home":        true, // HomeTrash is a special case
 		"proc":        true,
 		"sysfs":       true,
 		"devtmpfs":    true,
@@ -110,6 +111,8 @@ var (
 	}
 )
 
+// HomeTrash is a special case; it's not a partition root, it's a
+// specific folder.
 func IgnoreFsFunc(minfo *MountInfo) bool {
 	if ignoreFsTypes[minfo.FSType] {
 		return true
