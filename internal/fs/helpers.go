@@ -1,6 +1,10 @@
 package fs
 
-import "strings"
+import (
+	"fmt"
+	"os"
+	"strings"
+)
 
 // Source: github.com/moby/sys/mountinfo/mountinfo_linux.go
 //
@@ -39,4 +43,21 @@ func unescape(path string) string {
 	}
 
 	return string(buf[:bufLen])
+}
+
+func FileExists(filename string) (string, bool, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		switch {
+		case os.IsNotExist(err):
+			return "", false, fmt.Errorf("file %s does not exist", filename)
+		case os.IsPermission(err):
+			return "", false,
+				fmt.Errorf("you don't have persmission to access %s", filename)
+		default:
+			return "", false, err
+		}
+	}
+	defer f.Close()
+	return f.Name(), true, nil
 }
