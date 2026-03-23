@@ -1,51 +1,52 @@
 package trash
 
 import (
-	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
 
 	"golang.org/x/sys/unix"
+	"ukiran.com/useme/internal/fsys"
 )
 
 // FileEntry is the representation of a file in trash
 type FileEntry struct {
-	OrigPath     string      // Absolute path of file "prior" trashing
-	Name         string      // Original base name of file
-	Size         int64       // Size of file in bytes
-	IsDir        bool        // Indicates if this is a directory
-	FileMode     fs.FileMode // Mode of the file
-	DeletionDate time.Time   // Time of deletion
-	MountRoot    string      // Root path of the Mount Point
-	DeviceID     uint64      // File's Device ID
-	TrashPath    string      // Absolute path of file "after" trashing
+	OrigPath      string // AbsPath where the file lived before trashing
+	TrashPath     string // AbsPath to the actual data in $topdir/files
+	TrashInfoPath string // AbsPath to the corresponding .trashinfo
+	MountRoot     string // Root of filesystem where the file originally resided
+	Name          string // Base name of the file
+	Size          int64  // Logical size of file in bytes
+	IsDir         bool
+	FileMode      fs.FileMode
+	DeletionDate  time.Time    // Time of Trashing operation
+	Stat          *unix.Stat_t // Raw Unix syscall metadata (Inodes, Device IDs)
 }
 
-// NewFileEntry takes in the Absoute path of the file (must exist) and
-// returns the FileEntry
-func NewFileEntry(filePath string) (*FileEntry, error) {
-	info, err := os.Lstat(filePath)
-	if err != nil {
-		return nil, err
-	}
+// NewFileEntry initializes a FileEntry struct using the file's
+// absolute path and its os.FileInfo (obtained via os.Lstat). It
+// extracts underlying Unix syscall metadata; returns a non-nil error
+// if the system metadata is inaccessible.
+func NewFileEntry(absFilepath string, info os.FileInfo) (*FileEntry, error) {
 	stat, ok := info.Sys().(*unix.Stat_t)
 	if !ok {
-		return nil, errors.New("Unable to get the Device ID")
+		return nil, fmt.Errorf(
+			"failed to get unix syscall.Stat_t for %s", absFilepath,
+		)
 	}
+	// TrashPath, TrashInfoPath, MountRoot will be added later by
+	// other functions
 	entry := &FileEntry{
-		OrigPath:     filePath,
+		OrigPath:     absFilepath,
 		Name:         info.Name(),
 		Size:         info.Size(),
 		IsDir:        info.IsDir(),
 		FileMode:     info.Mode(),
-		DeletionDate: time.Now(),
-		MountRoot:    "",
-		DeviceID:     stat.Dev,
-		// TrashPath
+		DeletionDate: time.Now().UTC(), // To comply with most metadata standards
+		Stat:         stat,
 	}
-	// Logic for MountRoot could go here too
 	return entry, nil
 }
 
@@ -70,4 +71,8 @@ func getMountRoot(devId uint64, fileAbsPath string) (string, error) {
 		}
 		current = parent
 	}
+}
+
+func (f *FileEntry) DirSize() (int64, error) {
+	return fsys.ConcurrnetDirSize(f.OrigPath)
 }
