@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/sys/unix"
+	"ukiran.com/useme/internal/env"
 )
 
 type MountInfo struct {
@@ -16,16 +17,16 @@ type MountInfo struct {
 	ParentID   int    // Useful if you need to trace up to the root
 	DevID      uint64 // Device ID
 	MountPoint string // e.g., /mnt/data
-	Opts       string // e.g., rw,relatime
 	FSType     string // e.g., ext4 (to skip network mounts like nfs/smb)
 	Source     string // e.g., /dev/sda1
+	IsReadOnly bool   // Parsed from vfsOpts, sbOpts
 }
 
 func (m *MountInfo) String() string {
 	return fmt.Sprintf(
-		"%d %d %d %s %s - %s %s",
+		"%d %d %d %s - %s %s %v",
 		m.MountID, m.ParentID, m.DevID,
-		m.MountPoint, m.Opts, m.FSType, m.Source,
+		m.MountPoint, m.FSType, m.Source, m.IsReadOnly,
 	)
 }
 
@@ -53,15 +54,20 @@ func ParseMountInfo(r io.Reader, filterFunc FilterFunc) ([]*MountInfo, error) {
 				text, fields[2],
 			)
 		}
+		vfsOpts := fields[5]
+		sbOpts := fields[numFields-1]
+
 		info := &MountInfo{
 			MountID:    toInt(fields[0]),
 			ParentID:   toInt(fields[1]),
-			DevID:      deviceID(toInt(major),toInt(minor))
+			DevID:      unix.Mkdev(uint32(toInt(major)), uint32(toInt(minor))),
 			MountPoint: unescape(fields[4]),
-			Opts:       fields[5],
 			FSType:     unescape(fields[sepIdx+1]),
 			Source:     unescape(fields[sepIdx+2]),
+			IsReadOnly: slices.Contains(strings.Split(vfsOpts, ","), "ro") ||
+				slices.Contains(strings.Split(sbOpts, ","), "ro"),
 		}
+
 		if filterFunc != nil {
 			if ignorable := filterFunc(info); ignorable {
 				continue
@@ -132,12 +138,17 @@ var (
 		"/run/initramfs",  // Root FS used during early boot
 
 		// Specific User Runtime Portals
-		"/run/user/1000/doc",  // Virtual document portals (FUSE)
-		"/run/user/1000/gvfs", // Virtual filesystem mounts (FUSE)
+		fmt.Sprintf("/run/user/%s/doc", env.UID),  // Virtual document portals (FUSE)
+		fmt.Sprintf("/run/user/%s/gvfs", env.UID), // Virtual filesystem mounts (FUSE)
 	}
 )
 
 func IgnoreFsFunc(minfo *MountInfo) bool {
+	// Check Read-Only
+	if minfo.IsReadOnly {
+		return true
+	}
+
 	if ignoreFsTypes[minfo.FSType] {
 		return true
 	}
@@ -156,10 +167,6 @@ func IgnoreFsFunc(minfo *MountInfo) bool {
 			return true
 		}
 	}
-	// Check Read-Only
-	if slices.Contains(strings.Split(minfo.Opts, ","), "ro") {
-		return true
-	}
 	return false
 }
 
@@ -168,8 +175,4 @@ func IgnoreFsFunc(minfo *MountInfo) bool {
 func toInt(s string) int {
 	i, _ := strconv.Atoi(s)
 	return i
-}
-
-func deviceID(major, minor int) uint64 {
-	return unix.Mkdev(uint32(major), uint32(minor))
 }
