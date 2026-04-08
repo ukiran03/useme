@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"golang.org/x/sys/unix"
-	"ukiran.com/useme/internal/env"
-	"ukiran.com/useme/internal/fsys"
+	"ukiran.com/urm/internal/env"
+	"ukiran.com/urm/internal/fsys"
 )
 
 type TrashCan struct {

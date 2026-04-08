@@ -1,4 +1,4 @@
-module ukiran.com/useme
+module ukiran.com/urm
 
 go 1.25.1
 

@@ -3,9 +3,8 @@ package trash
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"ukiran.com/useme/internal/fsys"
+	"ukiran.com/urm/internal/fsys"
 )
 
 type TrashManager struct {

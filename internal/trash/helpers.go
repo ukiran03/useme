@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sys/unix"
-	"ukiran.com/useme/internal/fsys"
+	"ukiran.com/urm/internal/fsys"
 )
 
 // getMountsInfos: reads and parses mountinfoFile and produces slice
