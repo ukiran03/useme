@@ -18,7 +18,9 @@ type MountInfo struct {
 	IsReadOnly bool   // Parsed from vfsOpts, sbOpts
 }
 
-func LoadMountInfo(r io.Reader, filterFunc FilterFunc, minfomap map[uint64]string) error {
+func LoadMountInfo(
+	r io.Reader, filterFunc FilterFunc, minfomap map[uint64]*MountInfo,
+) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		text := scanner.Text()
@@ -52,7 +54,7 @@ func LoadMountInfo(r io.Reader, filterFunc FilterFunc, minfomap map[uint64]strin
 				continue
 			}
 		}
-		minfomap[minfo.DevID] = minfo.MountPoint
+		minfomap[minfo.DevID] = minfo
 
 	}
 	if err := scanner.Err(); err != nil {
@@ -63,7 +65,4 @@ func LoadMountInfo(r io.Reader, filterFunc FilterFunc, minfomap map[uint64]strin
 
 // toInt converts a string to an int, and ignores any numbers parsing
 // errors, as there should not be any.
-func toInt(s string) int {
-	i, _ := strconv.Atoi(s)
-	return i
-}
+func toInt(s string) int { i, _ := strconv.Atoi(s); return i }
