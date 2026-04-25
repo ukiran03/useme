@@ -6,40 +6,12 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sys/unix"
-	"ukiran.com/urm/internal/fsys"
 )
-
-// getMountsInfos: reads and parses mountinfoFile and produces slice
-// of available trash paths(ie $topdirs)
-func getMountsInfos(mountinfofile string) ([]*fsys.MountInfo, error) {
-	f, err := os.Open(mountinfofile)
-	if err != nil {
-		return nil, fmt.Errorf("Error opening mountinfo file: %w", err)
-	}
-	mounts, err := fsys.ParseMountInfo(f, fsys.IgnoreFsFunc)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing mountinfo file: %w", err)
-	}
-	return mounts, nil
-}
-
-// onSameDevice: determines that the given two devIds are equal, hence
-// both belong to the same device
-func onSameDevice(dstDevId, srcDevId uint64) bool {
-	if dstDevId == srcDevId {
-		return true
-	}
-	return false
-}
 
 func DirExists(path string) (isDir, isSymlink bool, info os.FileInfo, err error) {
 	info, err = os.Lstat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			// Path explicitly does not exist
-			return false, false, nil, nil
-		}
-		// Some other error (Permissions, etc.)
+		//  Errors (Permissions, etc.)
 		return false, false, nil, err
 	}
 	mode := info.Mode()

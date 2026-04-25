@@ -1,54 +1,9 @@
 package trash
 
-import (
-	"fmt"
-	"os"
-
-	"ukiran.com/urm/internal/fsys"
-)
-
+// TODO: obsolete type
 type TrashManager struct {
 	HomeTrash *TrashCan
 	Mounts    map[string]*TrashCan // Keyed by mount point path
-}
-
-var (
-	mountinfoFile  = "/proc/self/mountinfo"
-	userHomeDir, _ = os.UserHomeDir()
-)
-
-func NewTrashManager(mounts []*fsys.MountInfo, homeDir string) *TrashManager {
-	tm := &TrashManager{
-		Mounts: make(map[string]*TrashCan, len(mounts)),
-	}
-	for _, m := range mounts {
-		tm.Mounts[m.MountPoint] = NewTrashCan(m)
-	}
-	dataHome := os.Getenv("XDG_DATA_HOME")
-	if dataHome == "" {
-		dataHome = filepath.Join(homeDir, ".local", "share")
-	}
-
-	tm.HomeTrash = &TrashCan{
-		RootPath: dataHome,
-	}
-	return tm
-}
-
-// FindTarget decides which TrashCan should be used. Get device ID of
-// FileEntry, If same as Home, return tm.HomeTrash Else, look for a
-// TrashCan on that mount point
-func (tm *TrashManager) FindTarget(filent *FileEntry) (*TrashCan, error) {
-	devID := filent.Stat.Dev
-	if devID == tm.HomeTrash.DeviceID {
-		return tm.HomeTrash, nil
-	} else {
-		if trash, ok := tm.Mounts[filent.MountRoot]; ok &&
-			onSameDevice(devID, trash.DeviceID) { // Is this neccessary?
-			return trash, nil
-		}
-	}
-	return nil, fmt.Errorf("No trashCan found for: %s", filent.Name)
 }
 
 type MoveStrategy int
@@ -59,7 +14,8 @@ const (
 	MoveIdentify                     // Just identify, don't move (dry run)
 )
 
-func (tm *TrashManager) Put(filent *FileEntry, strategy MoveStrategy) error {
+// TODO: obsolete func
+func (tm *TrashManager) Put(filent *TrashEntry, strategy MoveStrategy) error {
 	targetCan, err := tm.FindTarget(filent)
 	if err != nil {
 		switch strategy {
@@ -71,7 +27,7 @@ func (tm *TrashManager) Put(filent *FileEntry, strategy MoveStrategy) error {
 	return targetCan.Move(filent)
 }
 
-func (tm *TrashManager) CopyAndDelete(filent *FileEntry) error {
+func (tm *TrashManager) CopyAndDelete(filent *TrashEntry) error {
 	// TODO: Copy to HomeTrash and delete the source file (filent)
 	panic("unimplemented")
 }
